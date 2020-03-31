@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,10 @@
 import magenta
 from magenta.models.improv_rnn import improv_rnn_model
 from magenta.models.improv_rnn import improv_rnn_pipeline
-from magenta.music.protobuf import music_pb2
 from magenta.pipelines import lead_sheet_pipelines
 from magenta.pipelines import note_sequence_pipelines
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import training as contrib_training
+from magenta.protobuf import music_pb2
+import tensorflow as tf
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -36,7 +35,7 @@ class ImprovRNNPipelineTest(tf.test.TestCase):
                 magenta.music.MajorMinorChordOneHotEncoding()),
             magenta.music.OneHotEventSequenceEncoderDecoder(
                 magenta.music.MelodyOneHotEncoding(0, 127))),
-        contrib_training.HParams(),
+        tf.contrib.training.HParams(),
         min_note=0,
         max_note=127,
         transpose_to_key=0)

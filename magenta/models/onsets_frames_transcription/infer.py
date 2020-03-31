@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Inference for onset conditioned model.
 
 A histogram summary will be written for every example processed, and the
@@ -20,20 +19,22 @@ resulting MIDI and pianoroll images will also be written for every example.
 The final summary value is the mean score for all examples.
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import collections
 import functools
 import os
 import time
-import imageio
-from magenta.models.onsets_frames_transcription import constants
-from magenta.models.onsets_frames_transcription import data
+
 from magenta.models.onsets_frames_transcription import infer_util
 from magenta.models.onsets_frames_transcription import train_util
 from magenta.music import midi_io
-from magenta.music import sequences_lib
-from magenta.music.protobuf import music_pb2
+from magenta.protobuf import music_pb2
+
 import numpy as np
-import six
+import scipy
 import tensorflow.compat.v1 as tf
 
 
@@ -56,8 +57,6 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_string(
     'hparams', '',
     'A comma-separated list of `name=value` hyperparameter values.')
-tf.app.flags.DEFINE_boolean(
-    'shuffle_examples', False, 'Whether to shuffle examples.')
 tf.app.flags.DEFINE_string(
     'log', 'INFO',
     'The threshold for what messages will be logged: '
@@ -75,8 +74,7 @@ def model_inference(model_fn,
                     output_dir,
                     summary_writer,
                     master,
-                    preprocess_examples,
-                    shuffle_examples):
+                    preprocess_examples):
   """Runs inference for the given examples."""
   tf.logging.info('model_dir=%s', model_dir)
   tf.logging.info('checkpoint_path=%s', checkpoint_path)
@@ -88,8 +86,7 @@ def model_inference(model_fn,
 
   transcription_data = functools.partial(
       data_fn, examples=examples_path, preprocess_examples=preprocess_examples,
-      is_training=False, shuffle_examples=shuffle_examples,
-      skip_n_initial_records=0)
+      is_training=False, shuffle_examples=False, skip_n_initial_records=0)
 
   input_fn = infer_util.labels_to_features_wrapper(transcription_data)
 
@@ -129,7 +126,7 @@ def model_inference(model_fn,
         predictions['sequence_labels'])
 
     # Make filenames UNIX-friendly.
-    filename_chars = six.ensure_text(predictions['sequence_ids'], 'utf-8')
+    filename_chars = predictions['sequence_ids'].decode('utf-8')
     filename_chars = [c if c.isalnum() else '_' for c in filename_chars]
     filename_safe = ''.join(filename_chars).rstrip()
     filename_safe = '{:04d}_{}'.format(file_num, filename_safe[:200])
@@ -147,36 +144,23 @@ def model_inference(model_fn,
         output_dir, filename_safe + '_pianoroll.png')
     tf.logging.info('Writing acoustic logit/label file to %s',
                     pianoroll_output_file)
-    # Calculate frames based on the sequence. Includes any postprocessing done
-    # to turn raw onsets/frames predictions into the final sequence.
-    # TODO(fjord): This work is duplicated in metrics.py.
-    sequence_frame_predictions = sequences_lib.sequence_to_pianoroll(
-        sequence_prediction,
-        frames_per_second=data.hparams_frames_per_second(hparams),
-        min_pitch=constants.MIN_MIDI_PITCH,
-        max_pitch=constants.MAX_MIDI_PITCH).active
     with tf.gfile.GFile(pianoroll_output_file, mode='w') as f:
-      imageio.imwrite(
+      scipy.misc.imsave(
           f,
           infer_util.posterior_pianoroll_image(
-              predictions['onset_probs'],
-              predictions['onset_labels'],
               predictions['frame_probs'],
-              predictions['frame_labels'],
-              sequence_frame_predictions),
-          format='png')
+              predictions['frame_labels']))
 
-    # Update histogram and current scalar for metrics.
+    # Update histogram for metrics.
     with tf.Graph().as_default(), tf.Session().as_default():
-      for k, v in predictions.items():
+      for k, v in predictions.iteritems():
         if not k.startswith('metrics/'):
           continue
-        all_metrics[k].extend(v)
-        histogram_name = k + '_histogram'
-        metric_summary = tf.summary.histogram(histogram_name, all_metrics[k])
-        summary_writer.add_summary(metric_summary.eval(), global_step=file_num)
-        scalar_name = k
-        metric_summary = tf.summary.scalar(scalar_name, np.mean(all_metrics[k]))
+        all_metrics[k].append(v)
+        metric_summary = tf.summary.histogram(
+            k,
+            tf.constant(all_metrics[k], name=k),
+            collections=[])
         summary_writer.add_summary(metric_summary.eval(), global_step=file_num)
       summary_writer.flush()
 
@@ -184,12 +168,16 @@ def model_inference(model_fn,
 
   # Write final mean values for all metrics.
   with tf.Graph().as_default(), tf.Session().as_default():
-    for k, v in all_metrics.items():
-      final_scalar_name = 'final/' + k
+    for k, v in all_metrics.iteritems():
+      name = 'final/' + k
       metric_summary = tf.summary.scalar(
-          final_scalar_name, np.mean(all_metrics[k]))
+          name,
+          tf.constant(np.mean(all_metrics[k]), name=name),
+          collections=[])
       summary_writer.add_summary(metric_summary.eval())
     summary_writer.flush()
+
+  start_time = time.time()
 
 
 def run(config_map, data_fn):
@@ -232,5 +220,4 @@ def run(config_map, data_fn):
       output_dir=output_dir,
       summary_writer=summary_writer,
       preprocess_examples=FLAGS.preprocess_examples,
-      master=FLAGS.master,
-      shuffle_examples=FLAGS.shuffle_examples)
+      master=FLAGS.master)

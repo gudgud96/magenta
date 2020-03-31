@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ import zipfile
 from magenta.music import musicxml_parser
 from magenta.music import musicxml_reader
 from magenta.music import testing_lib
-from magenta.music.protobuf import music_pb2
-import tensorflow.compat.v1 as tf
+from magenta.protobuf import music_pb2
+import tensorflow as tf
 
 # Shortcut to CHORD_SYMBOL annotation type.
 CHORD_SYMBOL = music_pb2.NoteSequence.TextAnnotation.CHORD_SYMBOL

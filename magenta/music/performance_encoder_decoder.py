@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -271,7 +271,8 @@ class PerformanceOneHotEncoding(encoder_decoder.OneHotEncoding):
   def __init__(self, num_velocity_bins=0,
                max_shift_steps=performance_lib.DEFAULT_MAX_SHIFT_STEPS,
                min_pitch=performance_lib.MIN_MIDI_PITCH,
-               max_pitch=performance_lib.MAX_MIDI_PITCH):
+               max_pitch=performance_lib.MAX_MIDI_PITCH,
+               is_ctrl_changes=False):
     self._event_ranges = [
         (PerformanceEvent.NOTE_ON, min_pitch, max_pitch),
         (PerformanceEvent.NOTE_OFF, min_pitch, max_pitch),
@@ -280,6 +281,9 @@ class PerformanceOneHotEncoding(encoder_decoder.OneHotEncoding):
     if num_velocity_bins > 0:
       self._event_ranges.append(
           (PerformanceEvent.VELOCITY, 1, num_velocity_bins))
+    if is_ctrl_changes:
+      self._event_ranges.append(
+          (PerformanceEvent.PEDAL, 0, 15))
     self._max_shift_steps = max_shift_steps
 
   @property

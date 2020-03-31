@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@ import abc
 import collections
 import math
 
-import attr
 from magenta.music import constants
 from magenta.music import events_lib
 from magenta.music import sequences_lib
-from magenta.music.protobuf import music_pb2
-import tensorflow.compat.v1 as tf
+from magenta.protobuf import music_pb2
+import tensorflow as tf
 
 MAX_MIDI_PITCH = constants.MAX_MIDI_PITCH
 MIN_MIDI_PITCH = constants.MIN_MIDI_PITCH
@@ -42,11 +41,8 @@ DEFAULT_MAX_SHIFT_QUARTERS = 4
 DEFAULT_PROGRAM = 0
 
 
-@attr.s(frozen=True)
 class PerformanceEvent(object):
   """Class for storing events in a performance."""
-  event_type = attr.ib()
-  event_value = attr.ib()
 
   # Start of a new note.
   NOTE_ON = 1
@@ -59,25 +55,39 @@ class PerformanceEvent(object):
   # Duration of preceding NOTE_ON.
   # For Note-based encoding, used instead of NOTE_OFF events.
   DURATION = 5
+  # Sustain pedal events
+  PEDAL = 6
 
-  @event_type.validator
-  def _check_event(self, attribute, value):
-    """Validate event contents."""
-    del attribute, value  # This checks the whole object.
-    if self.event_type in (PerformanceEvent.NOTE_ON, PerformanceEvent.NOTE_OFF):
-      if not MIN_MIDI_PITCH <= self.event_value <= MAX_MIDI_PITCH:
-        raise ValueError('Invalid pitch value: %s' % self.event_value)
-    elif self.event_type == PerformanceEvent.TIME_SHIFT:
-      if not 0 <= self.event_value:
-        raise ValueError('Invalid time shift value: %s' % self.event_value)
-    elif self.event_type == PerformanceEvent.DURATION:
-      if not 1 <= self.event_value:
-        raise ValueError('Invalid duration value: %s' % self.event_value)
-    elif self.event_type == PerformanceEvent.VELOCITY:
-      if not 1 <= self.event_value <= MAX_NUM_VELOCITY_BINS:
-        raise ValueError('Invalid velocity value: %s' % self.event_value)
+  def __init__(self, event_type, event_value):
+    if event_type in (PerformanceEvent.NOTE_ON, PerformanceEvent.NOTE_OFF):
+      if not MIN_MIDI_PITCH <= event_value <= MAX_MIDI_PITCH:
+        raise ValueError('Invalid pitch value: %s' % event_value)
+    elif event_type == PerformanceEvent.TIME_SHIFT:
+      if not 0 <= event_value:
+        raise ValueError('Invalid time shift value: %s' % event_value)
+    elif event_type == PerformanceEvent.DURATION:
+      if not 1 <= event_value:
+        raise ValueError('Invalid duration value: %s' % event_value)
+    elif event_type == PerformanceEvent.VELOCITY:
+      if not 1 <= event_value <= MAX_NUM_VELOCITY_BINS:
+        raise ValueError('Invalid velocity value: %s' % event_value)
+    elif event_type == PerformanceEvent.PEDAL:
+      if not 0 <= event_value <= 15:
+        raise ValueError('Invalid pedal value: %s' % event_value)
     else:
-      raise ValueError('Invalid event type: %s' % self.event_type)
+      raise ValueError('Invalid event type: %s' % event_type)
+
+    self.event_type = event_type
+    self.event_value = event_value
+
+  def __repr__(self):
+    return 'PerformanceEvent(%r, %r)' % (self.event_type, self.event_value)
+
+  def __eq__(self, other):
+    if not isinstance(other, PerformanceEvent):
+      return False
+    return (self.event_type == other.event_type and
+            self.event_value == other.event_value)
 
 
 def _velocity_bin_size(num_velocity_bins):
@@ -323,13 +333,16 @@ class BasePerformance(events_lib.EventSequence):
   @staticmethod
   def _from_quantized_sequence(quantized_sequence, start_step,
                                num_velocity_bins, max_shift_steps,
-                               instrument=None):
+                               instrument=None,
+                               is_ctrl_changes=False):
     """Extract a list of events from the given quantized NoteSequence object.
 
     Within a step, new pitches are started with NOTE_ON and existing pitches are
     ended with NOTE_OFF. TIME_SHIFT shifts the current step forward in time.
     VELOCITY changes the current velocity value that will be applied to all
     NOTE_ON events.
+
+    @gudgud96: Adding control event inspection -- modelling pedal events as well.
 
     Args:
       quantized_sequence: A quantized NoteSequence instance.
@@ -343,10 +356,18 @@ class BasePerformance(events_lib.EventSequence):
     Returns:
       A list of events.
     """
+    # Extract notes
     notes = [note for note in quantized_sequence.notes
              if note.quantized_start_step >= start_step
              and (instrument is None or note.instrument == instrument)]
+    
     sorted_notes = sorted(notes, key=lambda note: (note.start_time, note.pitch))
+
+    # Extract controls
+    ctrls = [ctrl for ctrl in quantized_sequence.control_changes
+                      if ctrl.quantized_step >= start_step]
+    
+    sorted_ctrls = sorted(ctrls, key=lambda ctrl: ctrl.time)
 
     # Sort all note start and end events.
     onsets = [(note.quantized_start_step, idx, False)
@@ -354,6 +375,9 @@ class BasePerformance(events_lib.EventSequence):
     offsets = [(note.quantized_end_step, idx, True)
                for idx, note in enumerate(sorted_notes)]
     note_events = sorted(onsets + offsets)
+
+    ctrl_events = [(ctrl.quantized_step, ctrl.control_number, ctrl.control_value)
+                    for idx, ctrl in enumerate(sorted_ctrls)]
 
     current_step = start_step
     current_velocity_bin = 0
@@ -390,11 +414,34 @@ class BasePerformance(events_lib.EventSequence):
       performance_events.append(
           PerformanceEvent(event_type=event_type,
                            event_value=sorted_notes[idx].pitch))
+      
+      # Add sustain pedal event changes if is_ctrl_changes is True
+      if is_ctrl_changes:
+        if ctrl_events:
+          ctrl_step, ctrl_number, ctrl_value = ctrl_events[0]
+          sustain_event = None
+          
+          while ctrl_step < step:
+            if ctrl_number == 64:
+              pedal_val_to_bin = ctrl_value // 8
+              sustain_event = PerformanceEvent(event_type=PerformanceEvent.PEDAL,
+                                                event_value=pedal_val_to_bin)
+            ctrl_events.pop(0)
+            
+            if ctrl_events:
+              ctrl_step, ctrl_number, ctrl_value = ctrl_events[0]
+            else:
+              sustain_event = None
+              break
+
+          if sustain_event is not None:
+            performance_events.append(sustain_event)
 
     return performance_events
 
   @abc.abstractmethod
-  def to_sequence(self, velocity, instrument, program, max_note_duration=None):
+  def to_sequence(self, velocity, instrument, program, max_note_duration=None, 
+                  is_ctrl_changes=False):
     """Converts the Performance to NoteSequence proto.
 
     Args:
@@ -414,7 +461,7 @@ class BasePerformance(events_lib.EventSequence):
     pass
 
   def _to_sequence(self, seconds_per_step, velocity, instrument, program,
-                   max_note_duration=None):
+                   max_note_duration=None, is_ctrl_changes=False):
     sequence_start_time = self.start_step * seconds_per_step
 
     sequence = music_pb2.NoteSequence()
@@ -467,6 +514,13 @@ class BasePerformance(events_lib.EventSequence):
         assert self._num_velocity_bins
         velocity = velocity_bin_to_velocity(
             event.event_value, self._num_velocity_bins)
+      elif event.event_type == PerformanceEvent.PEDAL:
+        if is_ctrl_changes:
+          ctrl = sequence.control_changes.add()
+          # time is the same as pitch start step
+          ctrl.time = step * seconds_per_step + sequence_start_time
+          ctrl.control_number = 64
+          ctrl.control_value = event.event_value * 8
       else:
         raise ValueError('Unknown event type: %s' % event.event_type)
 
@@ -503,7 +557,7 @@ class Performance(BasePerformance):
   def __init__(self, quantized_sequence=None, steps_per_second=None,
                start_step=0, num_velocity_bins=0,
                max_shift_steps=DEFAULT_MAX_SHIFT_STEPS, instrument=None,
-               program=None, is_drum=None):
+               program=None, is_drum=None, is_ctrl_changes=False):
     """Construct a Performance.
 
     Either quantized_sequence or steps_per_second should be supplied.
@@ -524,6 +578,8 @@ class Performance(BasePerformance):
           Ignored if `quantized_sequence` is provided.
       is_drum: Whether or not this performance consists of drums, or None if not
           specified. Ignored if `quantized_sequence` is provided.
+      is_ctrl_changes: Where or not this performance considers the control 
+          change events.
 
     Raises:
       ValueError: If both or neither of `quantized_sequence` or
@@ -539,7 +595,8 @@ class Performance(BasePerformance):
           quantized_sequence.quantization_info.steps_per_second)
       self._events = self._from_quantized_sequence(
           quantized_sequence, start_step, num_velocity_bins,
-          max_shift_steps=max_shift_steps, instrument=instrument)
+          max_shift_steps=max_shift_steps, instrument=instrument, 
+          is_ctrl_changes=is_ctrl_changes)
       program, is_drum = _program_and_is_drum_from_sequence(
           quantized_sequence, instrument)
 
@@ -562,7 +619,8 @@ class Performance(BasePerformance):
                   velocity=100,
                   instrument=0,
                   program=None,
-                  max_note_duration=None):
+                  max_note_duration=None,
+                  is_ctrl_changes=False):
     """Converts the Performance to NoteSequence proto.
 
     Args:
@@ -575,6 +633,7 @@ class Performance(BasePerformance):
           exists).
       max_note_duration: Maximum note duration in seconds to allow. Notes longer
           than this will be truncated. If None, notes can be any length.
+      is_ctrl_changes: If control changes are being modelled
 
     Returns:
       A NoteSequence proto.
@@ -585,7 +644,8 @@ class Performance(BasePerformance):
         velocity=velocity,
         instrument=instrument,
         program=program,
-        max_note_duration=max_note_duration)
+        max_note_duration=max_note_duration,
+        is_ctrl_changes=is_ctrl_changes)
 
 
 class MetricPerformance(BasePerformance):
@@ -594,7 +654,7 @@ class MetricPerformance(BasePerformance):
   def __init__(self, quantized_sequence=None, steps_per_quarter=None,
                start_step=0, num_velocity_bins=0,
                max_shift_quarters=DEFAULT_MAX_SHIFT_QUARTERS, instrument=None,
-               program=None, is_drum=None):
+               program=None, is_drum=None, is_ctrl_changes=False):
     """Construct a MetricPerformance.
 
     Either quantized_sequence or steps_per_quarter should be supplied.
@@ -632,7 +692,7 @@ class MetricPerformance(BasePerformance):
       self._events = self._from_quantized_sequence(
           quantized_sequence, start_step, num_velocity_bins,
           max_shift_steps=self._steps_per_quarter * max_shift_quarters,
-          instrument=instrument)
+          instrument=instrument, is_ctrl_changes=is_ctrl_changes)
       program, is_drum = _program_and_is_drum_from_sequence(
           quantized_sequence, instrument)
 

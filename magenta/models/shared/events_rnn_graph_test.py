@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ import tempfile
 import magenta
 from magenta.models.shared import events_rnn_graph
 from magenta.models.shared import events_rnn_model
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import training as contrib_training
+import tensorflow as tf
 
 
 class EventSequenceRNNGraphTest(tf.test.TestCase):
@@ -33,7 +32,7 @@ class EventSequenceRNNGraphTest(tf.test.TestCase):
         None,
         magenta.music.OneHotEventSequenceEncoderDecoder(
             magenta.music.testing_lib.TrivialOneHotEncoding(12)),
-        contrib_training.HParams(
+        tf.contrib.training.HParams(
             batch_size=128,
             rnn_layer_sizes=[128, 128],
             dropout_keep_prob=0.5,

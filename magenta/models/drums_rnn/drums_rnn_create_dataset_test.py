@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,10 @@
 import magenta
 from magenta.models.drums_rnn import drums_rnn_pipeline
 from magenta.models.shared import events_rnn_model
-from magenta.music.protobuf import music_pb2
 from magenta.pipelines import drum_pipelines
 from magenta.pipelines import note_sequence_pipelines
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import training as contrib_training
+from magenta.protobuf import music_pb2
+import tensorflow as tf
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -33,7 +32,7 @@ class DrumsRNNPipelineTest(tf.test.TestCase):
         None,
         magenta.music.OneHotEventSequenceEncoderDecoder(
             magenta.music.MultiDrumOneHotEncoding()),
-        contrib_training.HParams())
+        tf.contrib.training.HParams())
 
   def testDrumsRNNPipeline(self):
     note_sequence = magenta.common.testing_lib.parse_test_proto(

@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Tests for converting a directory of MIDIs to a NoteSequence TFRecord file."""
 
 import os
@@ -20,7 +19,7 @@ import tempfile
 
 from magenta.music import note_sequence_io
 from magenta.scripts import convert_dir_to_note_sequences
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class ConvertMidiDirToSequencesTest(tf.test.TestCase):

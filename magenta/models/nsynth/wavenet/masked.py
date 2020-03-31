@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 def shift_right(x):
@@ -51,7 +51,7 @@ def mul_or_none(a, b):
   """
   if a is None or b is None:
     return None
-  return int(a * b)
+  return a * b
 
 
 def time_to_batch(x, block_size):

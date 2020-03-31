@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +22,12 @@ import tempfile
 
 import magenta
 from magenta.music import performance_lib
-from magenta.music.protobuf import music_pb2
+from magenta.protobuf import music_pb2
+from magenta.music.midi_io import note_sequence_to_pretty_midi
 
 import pygtrie
 
+# comment this line out if necessary
 from tensor2tensor.data_generators import text_encoder
 
 CHORD_SYMBOL = music_pb2.NoteSequence.TextAnnotation.CHORD_SYMBOL
@@ -35,7 +37,7 @@ class MidiPerformanceEncoder(object):
   """Convert between performance event indices and (filenames of) MIDI files."""
 
   def __init__(self, steps_per_second, num_velocity_bins, min_pitch, max_pitch,
-               add_eos=False, ngrams=None):
+               add_eos=False, ngrams=None, is_ctrl_changes=False):
     """Initialize a MidiPerformanceEncoder object.
 
     Encodes MIDI using a performance event encoding. Index 0 is unused as it is
@@ -70,6 +72,7 @@ class MidiPerformanceEncoder(object):
     self._num_velocity_bins = num_velocity_bins
     self._add_eos = add_eos
     self._ngrams = ngrams or []
+    self.is_ctrl_changes = is_ctrl_changes
 
     for ngram in self._ngrams:
       if len(ngram) < 2:
@@ -81,7 +84,8 @@ class MidiPerformanceEncoder(object):
         num_velocity_bins=num_velocity_bins,
         max_shift_steps=steps_per_second,
         min_pitch=min_pitch,
-        max_pitch=max_pitch)
+        max_pitch=max_pitch,
+        is_ctrl_changes=self.is_ctrl_changes)
 
     # Create a trie mapping n-grams to new indices.
     ngram_ids = range(self.unigram_vocab_size,
@@ -94,7 +98,7 @@ class MidiPerformanceEncoder(object):
 
   @property
   def num_reserved_ids(self):
-    return text_encoder.NUM_RESERVED_TOKENS
+    return 2
 
   def encode_note_sequence(self, ns):
     """Transform a NoteSequence into a list of performance event indices.
@@ -108,7 +112,12 @@ class MidiPerformanceEncoder(object):
     performance = magenta.music.Performance(
         magenta.music.quantize_note_sequence_absolute(
             ns, self._steps_per_second),
-        num_velocity_bins=self._num_velocity_bins)
+        num_velocity_bins=self._num_velocity_bins,
+        is_ctrl_changes=self.is_ctrl_changes)
+    
+    # print()
+    # for event in performance:
+    #   print(event)
 
     event_ids = [self._encoding.encode_event(event) + self.num_reserved_ids
                  for event in performance]
@@ -118,8 +127,8 @@ class MidiPerformanceEncoder(object):
     j = 0
     while j < len(event_ids):
       ngram = ()
-      for i in range(j, len(event_ids)):
-        ngram += (event_ids[i],)
+      for i in event_ids[j:]:
+        ngram += (i,)
         if self._ngrams_trie.has_key(ngram):
           best_ngram = ngram
         if not self._ngrams_trie.has_subtrie(ngram):
@@ -147,7 +156,7 @@ class MidiPerformanceEncoder(object):
       ns = music_pb2.NoteSequence()
     return self.encode_note_sequence(ns)
 
-  def decode(self, ids, strip_extraneous=False):
+  def decode(self, ids, strip_extraneous=False, return_pm=False):
     """Transform a sequence of event indices into a performance MIDI file.
 
     Args:
@@ -171,16 +180,22 @@ class MidiPerformanceEncoder(object):
     performance = magenta.music.Performance(
         quantized_sequence=None,
         steps_per_second=self._steps_per_second,
-        num_velocity_bins=self._num_velocity_bins)
+        num_velocity_bins=self._num_velocity_bins,
+        is_ctrl_changes=self.is_ctrl_changes)
+
     for i in event_ids:
       performance.append(self._encoding.decode_event(i - self.num_reserved_ids))
 
-    ns = performance.to_sequence()
+    ns = performance.to_sequence(is_ctrl_changes=self.is_ctrl_changes)
 
-    _, tmp_file_path = tempfile.mkstemp('_decode.mid')
-    magenta.music.sequence_proto_to_midi_file(ns, tmp_file_path)
-
-    return tmp_file_path
+    if return_pm:
+      pm = note_sequence_to_pretty_midi(ns)
+      return pm
+      
+    else:
+      _, tmp_file_path = tempfile.mkstemp('_decode.mid')
+      magenta.music.sequence_proto_to_midi_file(ns, tmp_file_path)
+      return tmp_file_path
 
   def decode_list(self, ids):
     """Transform a sequence of event indices into a performance MIDI file.
@@ -430,3 +445,21 @@ class FlattenedTextMelodyEncoderAbsolute(TextMelodyEncoderAbsolute):
     """
     ns = magenta.music.midi_file_to_sequence_proto(s)
     return self.encode_note_sequence(ns)
+
+
+# NUM_VELOCITY_BINS = 32
+# STEPS_PER_SECOND = 100
+# MIN_PITCH = 21
+# MAX_PITCH = 108
+
+# mpe = MidiPerformanceEncoder(
+#         steps_per_second=STEPS_PER_SECOND,
+#         num_velocity_bins=NUM_VELOCITY_BINS,
+#         min_pitch=MIN_PITCH,
+#         max_pitch=MAX_PITCH,
+#         add_eos=False)
+
+# song_name = "/data/piano-e-competition/Ye02.MID"
+# output = mpe.encode(song_name)
+# output = mpe.decode(output)
+# print(output)

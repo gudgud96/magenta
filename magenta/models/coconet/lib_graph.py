@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,8 +22,7 @@ import os
 
 from magenta.models.coconet import lib_hparams
 from magenta.models.coconet import lib_tfutil
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import layers as contrib_layers
+import tensorflow as tf
 
 
 class CoconetGraph(object):
@@ -281,7 +280,7 @@ class CoconetGraph(object):
       tf.logging.info('num_splits %d', num_splits)
       if num_splits > 1:
         num_outputs = None
-      conv = contrib_layers.separable_conv2d(
+      conv = tf.contrib.layers.separable_conv2d(
           x,
           num_outputs,
           filter_shape[:2],

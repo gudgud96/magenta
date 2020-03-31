@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,14 +23,13 @@ import collections
 from magenta.common import tf_utils
 from magenta.models.onsets_frames_transcription import audio_transform
 from magenta.models.onsets_frames_transcription import model
-from magenta.models.onsets_frames_transcription import model_tpu
-from tensorflow.contrib import training as contrib_training
+import tensorflow as tf_head
 
 Config = collections.namedtuple('Config', ('model_fn', 'hparams'))
 
 DEFAULT_HPARAMS = tf_utils.merge_hparams(
     audio_transform.DEFAULT_AUDIO_TRANSFORM_HPARAMS,
-    contrib_training.HParams(
+    tf_head.contrib.training.HParams(
         eval_batch_size=1,
         predict_batch_size=1,
         shuffle_buffer_size=64,
@@ -51,15 +50,7 @@ DEFAULT_HPARAMS = tf_utils.merge_hparams(
         min_frame_occupancy_for_label=0.0,
         jitter_amount_ms=0,
         min_duration_ms=0,
-        backward_shift_amount_ms=0,
-        velocity_scale=80.0,
-        velocity_bias=10.0,
-        drum_data_map='',
-        drum_prediction_map='',
-        velocity_loss_weight=1.0,
-        splice_n_examples=0,
-        viterbi_decoding=False,
-        viterbi_alpha=0.5))
+        backward_shift_amount_ms=0))
 
 CONFIG_MAP = {}
 
@@ -67,34 +58,6 @@ CONFIG_MAP['onsets_frames'] = Config(
     model_fn=model.model_fn,
     hparams=tf_utils.merge_hparams(DEFAULT_HPARAMS,
                                    model.get_default_hparams()),
-)
-
-CONFIG_MAP['drums'] = Config(
-    model_fn=model_tpu.model_fn,
-    hparams=tf_utils.merge_hparams(
-        tf_utils.merge_hparams(DEFAULT_HPARAMS,
-                               model_tpu.get_default_hparams()),
-        contrib_training.HParams(
-            drums_only=True,
-            # Ensure onsets take up only a single frame during pianoroll
-            # generation.
-            onset_length=0,
-            velocity_scale=127.0,
-            velocity_bias=0.0,
-            batch_size=128,
-            sample_rate=44100,
-            spec_n_bins=250,
-            hop_length=441,  # 10ms
-            velocity_loss_weight=0.5,
-            num_filters=[16, 16, 32],
-            fc_size=256,
-            onset_lstm_units=64,
-            acoustic_rnn_dropout_keep_prob=0.50,
-            drum_data_map='8-hit',
-            learning_rate=0.0001,
-            splice_n_examples=12,
-            max_expected_train_example_len=100,
-        )),
 )
 
 DatasetConfig = collections.namedtuple(

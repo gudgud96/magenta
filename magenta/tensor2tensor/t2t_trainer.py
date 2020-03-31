@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ from __future__ import print_function
 from magenta.tensor2tensor import models  # pylint: disable=unused-import
 from magenta.tensor2tensor import problems  # pylint: disable=unused-import
 from tensor2tensor.bin import t2t_trainer
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 def main(argv):

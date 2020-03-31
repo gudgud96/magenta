@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Defines the Material Design Icons Problem."""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import io
+import itertools
 import numpy as np
 
 from PIL import Image
-from six.moves import zip_longest
 from skimage import draw
 
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 SVG_PREFIX_BIG = ('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="'
@@ -47,7 +50,7 @@ def grouper(iterable, batch_size, fill_value=None):
   """Helper method for returning batches of size batch_size of a dataset."""
   # grouper('ABCDEF', 3) -> 'ABC', 'DEF'
   args = [iter(iterable)] * batch_size
-  return zip_longest(*args, fillvalue=fill_value)
+  return itertools.izip_longest(*args, fillvalue=fill_value)
 
 
 def map_uni_to_alphanum(uni):
@@ -342,7 +345,7 @@ def _make_clockwise(subpath):
 def canonicalize(path):
   """Makes all paths start at top left, and go clockwise first."""
   # convert args to floats
-  path = [[x[0]] + list(map(float, x[1:])) for x in path]
+  path = [[x[0]] + map(float, x[1:]) for x in path]
 
   # canonicalize each subpath separately
   new_substructures = []
@@ -368,7 +371,7 @@ def canonicalize(path):
     new_path.extend(sp)
 
   # convert args to strs
-  path = [[x[0]] + list(map(str, x[1:])) for x in new_path]
+  path = [[x[0]] + map(str, x[1:]) for x in new_path]
   return path
 
 
@@ -469,7 +472,7 @@ def _cubicbezier(x0, y0, x1, y1, x2, y2, x3, y3, n=40):
     x = float(a * x0 + b * x1 + c * x2 + d * x3)
     y = float(a * y0 + b * y1 + c * y2 + d * y3)
     pts.append((x, y))
-  return list(zip(*pts))
+  return zip(*pts)
 
 
 def _update_pos(curr_pos, end_pos, absolute):
@@ -503,7 +506,7 @@ def _render_cubic(canvas, curr_pos, c_args, absolute, color):
               if within_range(x_) and within_range(y_)]
   if not filtered:
     return
-  x, y = list(zip(*filtered))
+  x, y = zip(*filtered)
   canvas[y, x, :] = color
 
 
@@ -522,7 +525,7 @@ def _render_line(canvas, curr_pos, l_args, absolute, color):
               if within_range(x) and within_range(y)]
   if not filtered:
     return
-  rr, cc, val = list(zip(*filtered))
+  rr, cc, val = zip(*filtered)
   val = [(v * color) for v in val]
   canvas[cc, rr, :] = val
 

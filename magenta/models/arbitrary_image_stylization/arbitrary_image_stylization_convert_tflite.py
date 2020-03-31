@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import tempfile
 from magenta.models.arbitrary_image_stylization \
   import arbitrary_image_stylization_build_mobilenet_model as build_mobilenet_model
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 flags = tf.flags
 flags.DEFINE_float('alpha', 0.25, 'Width multiplier of the transform model.')

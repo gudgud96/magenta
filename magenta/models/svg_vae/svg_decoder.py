@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Defines the SVGDecoder model."""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import copy
 
@@ -24,8 +26,7 @@ from tensor2tensor.layers import common_layers
 from tensor2tensor.utils import registry
 from tensor2tensor.utils import t2t_model
 from tensor2tensor.utils import trainer_lib
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import rnn as contrib_rnn
+import tensorflow as tf
 
 
 @registry.register_model
@@ -135,9 +136,9 @@ class SVGDecoder(t2t_model.T2TModel):
     batch_size = common_layers.shape_list(inputs)[0]
     zero_pad, logits_so_far = self.create_initial_input_for_decode(batch_size)
 
-    layers = contrib_rnn.MultiRNNCell([
-        self.lstm_cell(hparams, train) for _ in range(hparams.num_hidden_layers)
-    ])
+    layers = tf.contrib.rnn.MultiRNNCell(
+        [self.lstm_cell(hparams, train)
+         for _ in range(hparams.num_hidden_layers)])
 
     if initial_state is None:
       raise Exception('initial state should be init from bottleneck!')
@@ -241,9 +242,9 @@ class SVGDecoder(t2t_model.T2TModel):
   def lstm_decoder(self, inputs, sequence_length, hparams, clss, train,
                    initial_state=None, bottleneck=None):
     # NOT IN PREDICT MODE. JUST RUN TEACHER-FORCED RNN:
-    layers = contrib_rnn.MultiRNNCell([
-        self.lstm_cell(hparams, train) for _ in range(hparams.num_hidden_layers)
-    ])
+    layers = tf.contrib.rnn.MultiRNNCell(
+        [self.lstm_cell(hparams, train)
+         for _ in range(hparams.num_hidden_layers)])
 
     # append one-hot class to bottleneck, which will be given per step
     clss = tf.reshape(clss, [-1])
@@ -281,13 +282,12 @@ class SVGDecoder(t2t_model.T2TModel):
   def lstm_cell(self, hparams, train):
     keep_prob = 1.0 - hparams.rec_dropout * tf.to_float(train)
 
-    recurrent_dropout_cell = contrib_rnn.LayerNormBasicLSTMCell(
-        hparams.hidden_size,
-        layer_norm=hparams.layer_norm,
+    recurrent_dropout_cell = tf.contrib.rnn.LayerNormBasicLSTMCell(
+        hparams.hidden_size, layer_norm=hparams.layer_norm,
         dropout_keep_prob=keep_prob)
 
     if hparams.ff_dropout:
-      return contrib_rnn.DropoutWrapper(
+      return tf.contrib.rnn.DropoutWrapper(
           recurrent_dropout_cell, input_keep_prob=keep_prob)
     return recurrent_dropout_cell
 

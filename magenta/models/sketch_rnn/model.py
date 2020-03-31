@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,26 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Sketch-RNN Model."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import random
 
 from magenta.models.sketch_rnn import rnn
 import numpy as np
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import rnn as contrib_rnn
-from tensorflow.contrib import training as contrib_training
+import tensorflow as tf
 
 
 def copy_hparams(hparams):
   """Return a copy of an HParams instance."""
-  return contrib_training.HParams(**hparams.values())
+  return tf.contrib.training.HParams(**hparams.values())
 
 
 def get_default_hparams():
   """Return default HParams for sketch-rnn."""
-  hparams = contrib_training.HParams(
+  hparams = tf.contrib.training.HParams(
       data_set=['aaron_sheep.npz'],  # Our dataset.
       num_steps=10000000,  # Total number of steps of training. Keep large.
       save_every=500,  # Number of batches per checkpoint creation.
@@ -177,12 +178,12 @@ class Model(object):
     if use_input_dropout:
       tf.logging.info('Dropout to input w/ keep_prob = %4.4f.',
                       self.hps.input_dropout_prob)
-      cell = contrib_rnn.DropoutWrapper(
+      cell = tf.contrib.rnn.DropoutWrapper(
           cell, input_keep_prob=self.hps.input_dropout_prob)
     if use_output_dropout:
       tf.logging.info('Dropout to output w/ keep_prob = %4.4f.',
                       self.hps.output_dropout_prob)
-      cell = contrib_rnn.DropoutWrapper(
+      cell = tf.contrib.rnn.DropoutWrapper(
           cell, output_keep_prob=self.hps.output_dropout_prob)
     self.cell = cell
 

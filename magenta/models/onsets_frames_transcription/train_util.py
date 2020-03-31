@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Utilities for training."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import collections
 import copy
 import functools
 import random
 import sys
+
+import tensorflow as tf_head
 import tensorflow.compat.v1 as tf
-from tensorflow.contrib import cluster_resolver as contrib_cluster_resolver
-from tensorflow.contrib import tpu as contrib_tpu
-from tensorflow.contrib import training as contrib_training
 
 
 # Should not be called from within the graph to avoid redundant summaries.
@@ -63,7 +65,6 @@ def create_estimator(model_fn,
                      hparams,
                      use_tpu=False,
                      master='',
-                     tpu_cluster=None,
                      save_checkpoint_steps=300,
                      save_summary_steps=300,
                      keep_checkpoint_max=None,
@@ -79,18 +80,10 @@ def create_estimator(model_fn,
       labels = features.labels
     return model_fn(features, labels, mode, params, config)
 
-  if tpu_cluster:
-    tpu_cluster_resolver = contrib_cluster_resolver.TPUClusterResolver(
-        tpu_cluster)
-    master = None
-  else:
-    tpu_cluster_resolver = None
-
-  config = contrib_tpu.RunConfig(
-      tpu_config=contrib_tpu.TPUConfig(
+  config = tf_head.contrib.tpu.RunConfig(
+      tpu_config=tf_head.contrib.tpu.TPUConfig(
           iterations_per_loop=save_checkpoint_steps),
       master=master,
-      cluster=tpu_cluster_resolver,
       save_summary_steps=save_summary_steps,
       save_checkpoints_steps=save_checkpoint_steps,
       keep_checkpoint_max=keep_checkpoint_max,
@@ -98,7 +91,7 @@ def create_estimator(model_fn,
 
   params = copy.deepcopy(hparams)
   params.del_hparam('batch_size')
-  return contrib_tpu.TPUEstimator(
+  return tf_head.contrib.tpu.TPUEstimator(
       use_tpu=use_tpu,
       model_fn=wrapped_model_fn,
       model_dir=model_dir,
@@ -112,7 +105,6 @@ def create_estimator(model_fn,
 
 
 def train(master,
-          tpu_cluster,
           model_fn,
           data_fn,
           additional_trial_info,
@@ -127,7 +119,6 @@ def train(master,
       model_fn=model_fn,
       model_dir=model_dir,
       master=master,
-      tpu_cluster=tpu_cluster,
       hparams=hparams,
       keep_checkpoint_max=keep_checkpoint_max,
       use_tpu=use_tpu)
@@ -244,7 +235,7 @@ def evaluate(master,
 
   checkpoint_path = None
   while True:
-    checkpoint_path = contrib_training.wait_for_new_checkpoint(
+    checkpoint_path = tf_head.contrib.training.wait_for_new_checkpoint(
         model_dir, last_checkpoint=checkpoint_path)
     estimator.evaluate(input_fn=transcription_data, steps=num_steps,
                        checkpoint_path=checkpoint_path, name=name)

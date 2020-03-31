@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 from magenta.music import performance_lib
 from magenta.music import sequences_lib
 from magenta.music import testing_lib
-from magenta.music.protobuf import music_pb2
-import tensorflow.compat.v1 as tf
+from magenta.protobuf import music_pb2
+import tensorflow as tf
 
 
 class PerformanceLibTest(tf.test.TestCase):
@@ -415,11 +415,6 @@ class PerformanceLibTest(tf.test.TestCase):
     for event in perf_events:
       performance.append(event)
     self.assertListEqual([100, 100, 100, 200, 200], performance.steps)
-
-  def testPeEqAndHash(self):
-    pe = performance_lib.PerformanceEvent
-    self.assertEqual(pe(pe.NOTE_ON, 60), pe(pe.NOTE_ON, 60))
-    self.assertEqual(1, len(set([pe(pe.NOTE_ON, 60), pe(pe.NOTE_ON, 60)])))
 
 
 if __name__ == '__main__':

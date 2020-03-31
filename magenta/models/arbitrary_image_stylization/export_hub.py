@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ from __future__ import print_function
 from absl import flags
 
 from magenta.models.arbitrary_image_stylization import arbitrary_image_stylization_build_model
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 flags.DEFINE_string('checkpoint', None, 'Path to the model checkpoint.')
 flags.DEFINE_string('export_path', None, 'Path where to save the hub module.')

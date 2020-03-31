@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,8 +20,7 @@ from __future__ import print_function
 
 import collections
 
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import cudnn_rnn as contrib_cudnn_rnn
+import tensorflow as tf
 from tensorflow.contrib import rnn
 from tensorflow.contrib import seq2seq
 from tensorflow.contrib.cudnn_rnn.python.layers import cudnn_rnn
@@ -62,7 +61,7 @@ def cudnn_lstm_layer(layer_sizes, dropout_keep_prob, is_training=True,
       name=name_or_scope)
 
   class BackwardCompatibleCudnnParamsFormatConverterLSTM(
-      contrib_cudnn_rnn.CudnnParamsFormatConverterLSTM):
+      tf.contrib.cudnn_rnn.CudnnParamsFormatConverterLSTM):
     """Overrides CudnnParamsFormatConverterLSTM for backward-compatibility."""
 
     def _cudnn_to_tf_biases(self, *cu_biases):
@@ -83,8 +82,8 @@ def cudnn_lstm_layer(layer_sizes, dropout_keep_prob, is_training=True,
                     self)._tf_to_cudnn_biases(
                         tf.concat([i, c, f + 1.0, o], axis=0)))
 
-  class BackwardCompatibleCudnnLSTMSaveable(contrib_cudnn_rnn.CudnnLSTMSaveable
-                                           ):
+  class BackwardCompatibleCudnnLSTMSaveable(
+      tf.contrib.cudnn_rnn.CudnnLSTMSaveable):
     """Overrides CudnnLSTMSaveable for backward-compatibility."""
 
     _format_converter_cls = BackwardCompatibleCudnnParamsFormatConverterLSTM

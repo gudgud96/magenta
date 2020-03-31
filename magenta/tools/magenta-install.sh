@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -92,14 +92,14 @@ conda create -n magenta python=3.7
 # In order to determine if any errors occurred while executing it, we verify
 # that the environment changed afterward.
 set +e
-conda activate magenta
+source activate magenta
 set -e
 if [[ $(conda info --envs | grep "*" | awk '{print $1}') != "magenta" ]]; then
   err 'Did not successfully activate the magenta conda environment'
 fi
 
 # Install other dependencies
-pip install jupyter magenta
+pip3 install jupyter magenta
 
 # Install rtmidi for realtime midi IO
 if [[ $(which apt-get) ]]; then
@@ -111,7 +111,7 @@ if [[ $(which apt-get) ]]; then
     echo ""
     sudo apt-get install build-essential libasound2-dev libjack-dev
 fi
-pip install --pre python-rtmidi
+pip3 install --pre python-rtmidi
 
 echo ""
 echo "=============================="

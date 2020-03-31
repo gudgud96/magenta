@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import threading
 import time
 
 from magenta.common import concurrency
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 class ConcurrencyTest(tf.test.TestCase):

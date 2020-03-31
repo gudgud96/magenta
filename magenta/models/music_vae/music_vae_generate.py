@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ from magenta import music as mm
 from magenta.models.music_vae import configs
 from magenta.models.music_vae import TrainedModel
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 flags = tf.app.flags
 logging = tf.logging

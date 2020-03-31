@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import apache_beam as beam
 from magenta.models.score2perf import datagen_beam
 from magenta.models.score2perf import music_encoders
 from magenta.music import testing_lib
-from magenta.music.protobuf import music_pb2
-import tensorflow.compat.v1 as tf
+from magenta.protobuf import music_pb2
+import tensorflow as tf
 
 
 class GenerateExamplesTest(tf.test.TestCase):

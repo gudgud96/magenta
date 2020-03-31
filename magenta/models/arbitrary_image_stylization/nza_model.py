@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,10 +23,9 @@ from __future__ import division
 from __future__ import print_function
 
 from magenta.models.image_stylization import model as model_util
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import slim as contrib_slim
+import tensorflow as tf
 
-slim = contrib_slim
+slim = tf.contrib.slim
 
 
 def transform(input_,

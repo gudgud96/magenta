@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ import copy
 import magenta
 from magenta.models.shared import events_rnn_model
 import magenta.music as mm
-from magenta.music.protobuf import generator_pb2
-from tensorflow.contrib import training as contrib_training
+import tensorflow as tf
 
 DEFAULT_MIN_NOTE = 48
 DEFAULT_MAX_NOTE = 84
@@ -133,14 +132,14 @@ class MelodyRnnConfig(events_rnn_model.EventSequenceRnnConfig):
 # Default configurations.
 default_configs = {
     'basic_rnn': MelodyRnnConfig(
-        generator_pb2.GeneratorDetails(
+        magenta.protobuf.generator_pb2.GeneratorDetails(
             id='basic_rnn',
             description='Melody RNN with one-hot encoding.'),
         magenta.music.OneHotEventSequenceEncoderDecoder(
             magenta.music.MelodyOneHotEncoding(
                 min_note=DEFAULT_MIN_NOTE,
                 max_note=DEFAULT_MAX_NOTE)),
-        contrib_training.HParams(
+        tf.contrib.training.HParams(
             batch_size=128,
             rnn_layer_sizes=[128, 128],
             dropout_keep_prob=0.5,
@@ -148,14 +147,14 @@ default_configs = {
             learning_rate=0.001)),
 
     'mono_rnn': MelodyRnnConfig(
-        generator_pb2.GeneratorDetails(
+        magenta.protobuf.generator_pb2.GeneratorDetails(
             id='mono_rnn',
             description='Monophonic RNN with one-hot encoding.'),
         magenta.music.OneHotEventSequenceEncoderDecoder(
             magenta.music.MelodyOneHotEncoding(
                 min_note=0,
                 max_note=128)),
-        contrib_training.HParams(
+        tf.contrib.training.HParams(
             batch_size=128,
             rnn_layer_sizes=[128, 128],
             dropout_keep_prob=0.5,
@@ -166,14 +165,14 @@ default_configs = {
         transpose_to_key=None),
 
     'lookback_rnn': MelodyRnnConfig(
-        generator_pb2.GeneratorDetails(
+        magenta.protobuf.generator_pb2.GeneratorDetails(
             id='lookback_rnn',
             description='Melody RNN with lookback encoding.'),
         magenta.music.LookbackEventSequenceEncoderDecoder(
             magenta.music.MelodyOneHotEncoding(
                 min_note=DEFAULT_MIN_NOTE,
                 max_note=DEFAULT_MAX_NOTE)),
-        contrib_training.HParams(
+        tf.contrib.training.HParams(
             batch_size=128,
             rnn_layer_sizes=[128, 128],
             dropout_keep_prob=0.5,
@@ -181,13 +180,13 @@ default_configs = {
             learning_rate=0.001)),
 
     'attention_rnn': MelodyRnnConfig(
-        generator_pb2.GeneratorDetails(
+        magenta.protobuf.generator_pb2.GeneratorDetails(
             id='attention_rnn',
             description='Melody RNN with lookback encoding and attention.'),
         magenta.music.KeyMelodyEncoderDecoder(
             min_note=DEFAULT_MIN_NOTE,
             max_note=DEFAULT_MAX_NOTE),
-        contrib_training.HParams(
+        tf.contrib.training.HParams(
             batch_size=128,
             rnn_layer_sizes=[128, 128],
             dropout_keep_prob=0.5,

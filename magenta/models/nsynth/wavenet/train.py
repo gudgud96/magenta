@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python2, python3
 r"""The training script that runs the party.
 
 This script requires tensorflow 1.1.0-rc1 or beyond.
@@ -23,15 +22,10 @@ So that it works locally, the default worker_replicas and total_batch_size are
 set to 1. For training in 200k iterations, they both should be 32.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from magenta.models.nsynth import utils
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import slim as contrib_slim
+import tensorflow as tf
 
-slim = contrib_slim
+slim = tf.contrib.slim
 FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string("master", "",
@@ -91,7 +85,7 @@ def main(unused_argv=None):
 
       # pylint: disable=cell-var-from-loop
       lr = tf.constant(config.learning_rate_schedule[0])
-      for key, value in config.learning_rate_schedule.items():
+      for key, value in config.learning_rate_schedule.iteritems():
         lr = tf.cond(
             tf.less(global_step, key), lambda: lr, lambda: tf.constant(value))
       # pylint: enable=cell-var-from-loop

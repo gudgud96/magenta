@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import magenta.music as mm
 from magenta.music import chords_lib
 from magenta.music import performance_lib
 from magenta.music import sequences_lib
-from magenta.music.protobuf import music_pb2
 from magenta.pipelines import performance_pipeline
+from magenta.protobuf import music_pb2
 import numpy as np
 from tensorflow.python.util import nest  # pylint:disable=g-direct-tensorflow-import
 
@@ -222,12 +222,7 @@ class BaseHierarchicalConverter(data.BaseConverter):
 
   def to_tensors(self, item):
     """Converts to tensors and adds hierarchical padding, if needed."""
-    tensors = self._to_tensors(item)
-    sampled_results = self._maybe_sample_outputs(list(zip(*tensors)))
-    if sampled_results:
-      unpadded_results = data.ConverterTensors(*zip(*sampled_results))
-    else:
-      unpadded_results = data.ConverterTensors()
+    unpadded_results = super(BaseHierarchicalConverter, self).to_tensors(item)
     if not self._max_lengths:
       return unpadded_results
 

@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Pipeline to create Performance dataset."""
 
 import magenta
@@ -22,13 +21,13 @@ from magenta.music import sequences_lib
 from magenta.music.performance_lib import NotePerformance
 from magenta.music.performance_lib import TooManyDurationStepsError
 from magenta.music.performance_lib import TooManyTimeShiftStepsError
-from magenta.music.protobuf import music_pb2
 from magenta.pipelines import dag_pipeline
 from magenta.pipelines import note_sequence_pipelines
 from magenta.pipelines import pipeline
 from magenta.pipelines import pipelines_common
 from magenta.pipelines import statistics
-import tensorflow.compat.v1 as tf
+from magenta.protobuf import music_pb2
+import tensorflow as tf
 
 
 class EncoderPipeline(pipeline.Pipeline):
@@ -56,15 +55,15 @@ class EncoderPipeline(pipeline.Pipeline):
       control_sequences = []
       for control in self._control_signals:
         control_sequences.append(control.extract(performance))
-      control_sequence = list(zip(*control_sequences))
+      control_sequence = zip(*control_sequences)
       if self._optional_conditioning:
         # Create two copies, one with and one without conditioning.
         # pylint: disable=g-complex-comprehension
         encoded = [
             self._encoder_decoder.encode(
-                list(zip([disable] * len(control_sequence), control_sequence)),
-                performance) for disable in [False, True]
-        ]
+                zip([disable] * len(control_sequence), control_sequence),
+                performance)
+            for disable in [False, True]]
         # pylint: enable=g-complex-comprehension
       else:
         encoded = [self._encoder_decoder.encode(
@@ -116,7 +115,7 @@ def get_pipeline(config, min_events, max_events, eval_ratio):
   stretch_factors = [0.95, 0.975, 1.0, 1.025, 1.05]
 
   # Transpose no more than a major third.
-  transposition_range = list(range(-3, 4))
+  transposition_range = range(-3, 4)
 
   partitioner = pipelines_common.RandomPartition(
       music_pb2.NoteSequence,
@@ -219,7 +218,7 @@ def extract_performances(
       programs.add(note.program)
     if len(programs) > 1:
       stats['performances_discarded_more_than_1_program'].increment()
-      return [], list(stats.values())
+      return [], stats.values()
 
   performances = []
 
@@ -266,4 +265,4 @@ def extract_performances(
         stats['performance_lengths_in_bars'].increment(
             performance.num_steps // steps_per_bar)
 
-  return performances, list(stats.values())
+  return performances, stats.values()

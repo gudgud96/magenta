@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python2, python3
 """A MIDI interface to the sequence generators.
 
 Captures monophonic input MIDI sequences and plays back responses from the
@@ -27,6 +26,7 @@ import re
 import threading
 import time
 
+import magenta
 from magenta.interfaces.midi import midi_hub
 from magenta.interfaces.midi import midi_interaction
 from magenta.models.drums_rnn import drums_rnn_sequence_generator
@@ -34,10 +34,8 @@ from magenta.models.melody_rnn import melody_rnn_sequence_generator
 from magenta.models.performance_rnn import performance_sequence_generator
 from magenta.models.pianoroll_rnn_nade import pianoroll_rnn_nade_sequence_generator
 from magenta.models.polyphony_rnn import polyphony_sequence_generator
-from magenta.models.shared import sequence_generator_bundle
-import six
 from six.moves import input  # pylint: disable=redefined-builtin
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -197,7 +195,7 @@ class CCMapper(object):
 
   def __init__(self, cc_map, midi_hub_):
     self._cc_map = cc_map
-    self._signals = list(cc_map.keys())
+    self._signals = cc_map.keys()
     self._midi_hub = midi_hub_
     self._update_event = threading.Event()
 
@@ -218,7 +216,7 @@ class CCMapper(object):
       signal: The name of the signal to update the control change for.
       msg: The mido.Message whose control change the signal should be set to.
     """
-    if msg.control in list(self._cc_map.values()):
+    if msg.control in self._cc_map.values():
       print('Control number %d is already assigned. Ignoring.' % msg.control)
     else:
       self._cc_map[signal] = msg.control
@@ -274,8 +272,9 @@ def _validate_flags():
 def _load_generator_from_bundle_file(bundle_file):
   """Returns initialized generator from bundle file path or None if fails."""
   try:
-    bundle = sequence_generator_bundle.read_bundle_file(bundle_file)
-  except sequence_generator_bundle.GeneratorBundleParseError:
+    bundle = magenta.music.sequence_generator_bundle.read_bundle_file(
+        bundle_file)
+  except magenta.music.sequence_generator_bundle.GeneratorBundleParseError:
     print('Failed to parse bundle file: %s' % FLAGS.bundle_file)
     return None
 
@@ -331,10 +330,8 @@ def main(unused_argv):
                          playback_channel=FLAGS.playback_channel,
                          playback_offset=FLAGS.playback_offset)
 
-  control_map = {
-      re.sub('_control_number$', '', six.ensure_str(f)): FLAGS.__getattr__(f)
-      for f in _CONTROL_FLAGS
-  }
+  control_map = {re.sub('_control_number$', '', f): FLAGS.__getattr__(f)
+                 for f in _CONTROL_FLAGS}
   if FLAGS.learn_controls:
     CCMapper(control_map, hub).update_map()
 

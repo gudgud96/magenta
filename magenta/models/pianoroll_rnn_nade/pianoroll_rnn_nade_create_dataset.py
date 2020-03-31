@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import os
 from magenta.models.pianoroll_rnn_nade import pianoroll_rnn_nade_model
 from magenta.pipelines import pianoroll_pipeline
 from magenta.pipelines import pipeline
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 flags = tf.app.flags
 FLAGS = tf.app.flags.FLAGS

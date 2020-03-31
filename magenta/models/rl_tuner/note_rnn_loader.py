@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,8 +41,7 @@ from magenta.music import midi_io
 from magenta.music import sequences_lib
 from magenta.pipelines import melody_pipelines
 import numpy as np
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import layers as contrib_layers
+import tensorflow as tf
 
 
 class NoteRNNLoader(object):
@@ -235,9 +234,9 @@ class NoteRNNLoader(object):
             outputs_flat = tf.reshape(outputs,
                                       [-1, self.hparams.rnn_layer_sizes[-1]])
             if self.note_rnn_type == 'basic_rnn':
-              linear_layer = contrib_layers.linear
+              linear_layer = tf.contrib.layers.linear
             else:
-              linear_layer = contrib_layers.legacy_linear
+              linear_layer = tf.contrib.layers.legacy_linear
             logits_flat = linear_layer(
                 outputs_flat, self.hparams.one_hot_length)
             return logits_flat, final_state

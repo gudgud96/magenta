@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,9 +23,7 @@ import random
 
 import numpy as np
 from six.moves import range  # pylint: disable=redefined-builtin
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import rnn as contrib_rnn
-from tensorflow.contrib import training as contrib_training
+import tensorflow as tf
 
 LSTM_STATE_NAME = 'lstm'
 
@@ -80,19 +78,18 @@ LEAP_DOUBLED = -1
 
 def default_hparams():
   """Generates the hparams used to train note rnn used in paper."""
-  return contrib_training.HParams(
-      use_dynamic_rnn=True,
-      batch_size=BATCH_SIZE,
-      lr=0.0002,
-      l2_reg=2.5e-5,
-      clip_norm=5,
-      initial_learning_rate=0.5,
-      decay_steps=1000,
-      decay_rate=0.85,
-      rnn_layer_sizes=[100],
-      skip_first_n_losses=32,
-      one_hot_length=NUM_CLASSES,
-      exponentially_decay_learning_rate=True)
+  return tf.contrib.training.HParams(use_dynamic_rnn=True,
+                                     batch_size=BATCH_SIZE,
+                                     lr=0.0002,
+                                     l2_reg=2.5e-5,
+                                     clip_norm=5,
+                                     initial_learning_rate=0.5,
+                                     decay_steps=1000,
+                                     decay_rate=0.85,
+                                     rnn_layer_sizes=[100],
+                                     skip_first_n_losses=32,
+                                     one_hot_length=NUM_CLASSES,
+                                     exponentially_decay_learning_rate=True)
 
 
 def basic_rnn_hparams():
@@ -106,20 +103,20 @@ def basic_rnn_hparams():
     Hyperparameters of the downloadable basic_rnn pre-trained model.
   """
   # TODO(natashajaques): ability to restore basic_rnn from any .mag file.
-  return contrib_training.HParams(
-      batch_size=128, rnn_layer_sizes=[512, 512], one_hot_length=NUM_CLASSES)
+  return tf.contrib.training.HParams(batch_size=128,
+                                     rnn_layer_sizes=[512, 512],
+                                     one_hot_length=NUM_CLASSES)
 
 
 def default_dqn_hparams():
   """Generates the default hparams for RLTuner DQN model."""
-  return contrib_training.HParams(
-      random_action_probability=0.1,
-      store_every_nth=1,
-      train_every_nth=5,
-      minibatch_size=32,
-      discount_rate=0.95,
-      max_experience=100000,
-      target_network_update_rate=0.01)
+  return tf.contrib.training.HParams(random_action_probability=0.1,
+                                     store_every_nth=1,
+                                     train_every_nth=5,
+                                     minibatch_size=32,
+                                     discount_rate=0.95,
+                                     max_experience=100000,
+                                     target_network_update_rate=0.01)
 
 
 def autocorrelate(signal, lag=1):
@@ -309,10 +306,10 @@ def make_rnn_cell(rnn_layer_sizes, state_is_tuple=False):
   """
   cells = []
   for num_units in rnn_layer_sizes:
-    cell = contrib_rnn.LSTMCell(num_units, state_is_tuple=state_is_tuple)
+    cell = tf.contrib.rnn.LSTMCell(num_units, state_is_tuple=state_is_tuple)
     cells.append(cell)
 
-  cell = contrib_rnn.MultiRNNCell(cells, state_is_tuple=state_is_tuple)
+  cell = tf.contrib.rnn.MultiRNNCell(cells, state_is_tuple=state_is_tuple)
 
   return cell
 

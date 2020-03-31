@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """MusicVAE training script."""
 
 from __future__ import absolute_import
@@ -23,8 +22,7 @@ import os
 
 from magenta.models.music_vae import configs
 from magenta.models.music_vae import data
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import training as contrib_training
+import tensorflow as tf
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -177,7 +175,7 @@ def train(train_dir,
             num_sync_workers)
         hooks.append(optimizer.make_session_run_hook(is_chief))
 
-      grads, var_list = list(zip(*optimizer.compute_gradients(model.loss)))
+      grads, var_list = zip(*optimizer.compute_gradients(model.loss))
       global_norm = tf.global_norm(grads)
       tf.summary.scalar('global_norm', global_norm)
 
@@ -194,8 +192,7 @@ def train(train_dir,
         raise ValueError(
             'Unknown clip_mode: {}'.format(config.hparams.clip_mode))
       train_op = optimizer.apply_gradients(
-          list(zip(clipped_grads, var_list)),
-          global_step=model.global_step,
+          zip(clipped_grads, var_list), global_step=model.global_step,
           name='train_step')
 
       logging_dict = {'global_step': model.global_step,
@@ -209,7 +206,7 @@ def train(train_dir,
           saver=tf.train.Saver(
               max_to_keep=checkpoints_to_keep,
               keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours))
-      contrib_training.train(
+      tf.contrib.training.train(
           train_op=train_op,
           logdir=train_dir,
           scaffold=scaffold,
@@ -240,10 +237,9 @@ def evaluate(train_dir,
         **_get_input_tensors(dataset_fn().take(num_batches), config))
 
     hooks = [
-        contrib_training.StopAfterNEvalsHook(num_batches),
-        contrib_training.SummaryAtEndHook(eval_dir)
-    ]
-    contrib_training.evaluate_repeatedly(
+        tf.contrib.training.StopAfterNEvalsHook(num_batches),
+        tf.contrib.training.SummaryAtEndHook(eval_dir)]
+    tf.contrib.training.evaluate_repeatedly(
         train_dir,
         eval_ops=eval_op,
         hooks=hooks,

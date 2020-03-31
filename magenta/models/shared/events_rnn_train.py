@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,7 @@
 
 """Train and evaluate an event sequence RNN model."""
 
-import tensorflow.compat.v1 as tf
-from tensorflow.contrib import training as contrib_training
+import tensorflow as tf
 
 
 def run_training(build_graph_fn, train_dir, num_training_steps=None,
@@ -74,7 +73,7 @@ def run_training(build_graph_fn, train_dir, num_training_steps=None,
               keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours))
 
       tf.logging.info('Starting training loop...')
-      contrib_training.train(
+      tf.contrib.training.train(
           train_op=train_op,
           logdir=train_dir,
           scaffold=scaffold,
@@ -124,11 +123,11 @@ def run_eval(build_graph_fn, train_dir, eval_dir, num_batches,
     }
     hooks = [
         EvalLoggingTensorHook(logging_dict, every_n_iter=num_batches),
-        contrib_training.StopAfterNEvalsHook(num_batches),
-        contrib_training.SummaryAtEndHook(eval_dir),
+        tf.contrib.training.StopAfterNEvalsHook(num_batches),
+        tf.contrib.training.SummaryAtEndHook(eval_dir),
     ]
 
-    contrib_training.evaluate_repeatedly(
+    tf.contrib.training.evaluate_repeatedly(
         train_dir,
         eval_ops=eval_ops,
         hooks=hooks,

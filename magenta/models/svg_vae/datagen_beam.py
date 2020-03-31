@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Beam pipelines to generate examples for the GlyphAzzn dataset."""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from absl import app
 from absl import flags
 
@@ -21,7 +24,7 @@ import apache_beam as beam
 from magenta.models.svg_vae import svg_utils
 import numpy as np
 from tensor2tensor.data_generators import generator_utils
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 FLAGS = flags.FLAGS
@@ -165,7 +168,7 @@ class MeanStddev(beam.CombineFn):
     return new_sum, new_sum_sq, count + new_seq_len
 
   def merge_accumulators(self, accumulators):
-    curr_sums, sum_sqs, counts = list(zip(*accumulators))
+    curr_sums, sum_sqs, counts = zip(*accumulators)
     return np.sum(curr_sums, axis=0), np.sum(sum_sqs, axis=0), np.sum(counts)
 
   def extract_output(self, sum_count):

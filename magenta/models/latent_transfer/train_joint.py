@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ from magenta.models.latent_transfer import model_joint
 import numpy as np
 import six
 from six.moves import range
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from tqdm import tqdm
 
 FLAGS = tf.flags.FLAGS

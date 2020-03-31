@@ -1,4 +1,4 @@
-# Copyright 2020 The Magenta Authors.
+# Copyright 2019 The Magenta Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 """Testing support code."""
 
 from magenta.music import encoder_decoder
-from magenta.music.protobuf import music_pb2
+from magenta.protobuf import music_pb2
 
 from google.protobuf import text_format
 
